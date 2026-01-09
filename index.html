@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Resonansi - Instalasi Seni Imersif Berbasis Data Real-Time">
+    <title>Resonansi - Instalasi Seni Imersif Real-Time</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #00ff88;
+            --secondary: #ff0080;
+            --tertiary: #00d4ff;
+            --accent: #ffaa00;
+            --dark: #0a0e1a;
+            --darker: #050810;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: #050810;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #050810;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(0, 255, 136, 0.1);
+            border-top: 8px solid #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-family: 'Orbitron', sans-serif;
+            color: #00ff88;
+            font-size: 1.2rem;
+            letter-spacing: 0.2em;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        header {
+            position: relative;
+            z-index: 10;
+            padding: 3rem 2rem;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(10,14,26,0.95) 0%, transparent 100%);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 50%, #ff0080 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.3)); }
+            50% { filter: drop-shadow(0 0 40px rgba(0, 255, 136, 0.3)); }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #00ff88;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        .status-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(10, 14, 26, 0.8);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: pulseIndicator 2s infinite;
+        }
+
+        @keyframes pulseIndicator {
+            0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 136, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.3); }
+        }
+
+        .status-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: #00ff88;
+            text-transform: uppercase;
+        }
+
+        .container {
+            position: relative;
+            z-index: 5;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: rgba(10, 14, 26, 0.6);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .value-display {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, #0a0e1a 0%, #00ff88 100%);
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            transition: all 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.3);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            border: none;
+        }
+
+        button {
+            font-family: 'Orbitron', sans-serif;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+            border: none;
+            border-radius: 10px;
+            color: #0a0e1a;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            margin: 0 auto 3rem;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(0, 255, 136, 0.3);
+        }
+
+        #mainCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            min-height: 600px;
+            background: #0a0e1a;
+            cursor: crosshair;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 14, 26, 0.8);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            backdrop-filter: blur(10px);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: #00ff88;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            padding: 2rem;
+            background: rgba(10, 14, 26, 0.6);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #00ff88;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #00ff88;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .music-section {
+            margin-bottom: 3rem;
+        }
+
+        .music-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .music-header h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: #00ff88;
+            margin-bottom: 0.5rem;
+        }
+
+        .music-pads {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            padding: 2rem;
+            background: rgba(10, 14, 26, 0.6);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .pad {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #0a0e1a 0%, rgba(0, 255, 136, 0.1) 100%);
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pad:hover {
+            transform: translateY(-5px);
+            border-color: #00ff88;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .pad.active {
+            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+            color: #0a0e1a;
+        }
+
+        .pad span {
+            font-size: 1.5rem;
+        }
+
+        .note-name {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 5px;
+        }
+
+        .info {
+            padding: 3rem 2rem;
+            background: rgba(10, 14, 26, 0.6);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            backdrop-filter: blur(10px);
+            margin-bottom: 3rem;
+        }
+
+        .info h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: #00ff88;
+            margin-bottom: 1.5rem;
+        }
+
+        .info p {
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            .subtitle {
+                font-size: 0.9rem;
+            }
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            .music-pads {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            #mainCanvas {
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="loader"></div>
+        <div class="loading-text">LOADING RESONANSI...</div>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-indicator"></div>
+        <span class="status-text">Live & Active</span>
+    </div>
+
+    <canvas class="background-canvas" id="bgCanvas"></canvas>
+
+    <header>
+        <h1>RESONANSI</h1>
+        <p class="subtitle">Instalasi Seni Imersif Real-Time</p>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label>
+                    <span>Intensitas Warna</span>
+                    <span class="value-display" id="colorValue">50%</span>
+                </label>
+                <input type="range" id="colorControl" min="0" max="100" value="50">
+            </div>
+            <div class="control-group">
+                <label>
+                    <span>Kecepatan Gerakan</span>
+                    <span class="value-display" id="motionValue">50%</span>
+                </label>
+                <input type="range" id="motionControl" min="1" max="100" value="50">
+            </div>
+            <div class="control-group">
+                <label>
+                    <span>Kompleksitas Visual</span>
+                    <span class="value-display" id="complexityValue">100</span>
+                </label>
+                <input type="range" id="complexityControl" min="10" max="200" value="100">
+            </div>
+            <div class="control-group">
+                <label>
+                    <span>Intensitas Cahaya</span>
+                    <span class="value-display" id="lightValue">70%</span>
+                </label>
+                <input type="range" id="lightControl" min="0" max="100" value="70">
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="resetBtn">🔄 Reset Kontrol</button>
+            <button id="clearBtn">🧹 Clear Canvas</button>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="mainCanvas"></canvas>
+            <div class="canvas-overlay">
+                <div>FPS: <span id="fpsDisplay">60</span></div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value" id="participantsCount">1</div>
+                <div class="stat-label">Partisipan Aktif</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🖱️</div>
+                <div class="stat-value" id="interactionsCount">0</div>
+                <div class="stat-label">Total Interaksi</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-value" id="energyLevel">0%</div>
+                <div class="stat-label">Level Energi</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎨</div>
+                <div class="stat-value" id="particleCount">0</div>
+                <div class="stat-label">Partikel Aktif</div>
+            </div>
+        </div>
+
+        <div class="music-section">
+            <div class="music-header">
+                <h2>🎵 Musik Kolaboratif</h2>
+                <p>Klik pad untuk menciptakan komposisi musik</p>
+            </div>
+            <div class="music-pads">
+                <div class="pad" data-note="C4"><span>C</span><div class="note-name">261 Hz</div></div>
+                <div class="pad" data-note="D4"><span>D</span><div class="note-name">293 Hz</div></div>
+                <div class="pad" data-note="E4"><span>E</span><div class="note-name">329 Hz</div></div>
+                <div class="pad" data-note="F4"><span>F</span><div class="note-name">349 Hz</div></div>
+                <div class="pad" data-note="G4"><span>G</span><div class="note-name">392 Hz</div></div>
+                <div class="pad" data-note="A4"><span>A</span><div class="note-name">440 Hz</div></div>
+                <div class="pad" data-note="B4"><span>B</span><div class="note-name">493 Hz</div></div>
+                <div class="pad" data-note="C5"><span>C5</span><div class="note-name">523 Hz</div></div>
+            </div>
+        </div>
+
+        <div class="info">
+            <h2>💡 Tentang Instalasi</h2>
+            <p><strong>Resonansi</strong> adalah instalasi seni interaktif yang menggabungkan data real-time dengan visualisasi generatif dan elemen musik kolaboratif. Setiap gerakan, pilihan warna, dan interaksi Anda berkontribusi pada komposisi visual dan audio yang unik.</p>
+            <p>Sistem menggunakan sensor gerakan untuk menangkap aktivitas fisik pengunjung dan mengubahnya menjadi elemen visual seperti partikel, warna, pola geometris, dan intensitas cahaya. Setiap pengunjung dapat bermain dengan pad musik untuk menciptakan harmoni kolektif.</p>
+            <p><strong>Cara Berinteraksi:</strong><br>
+            • Gerakkan mouse atau sentuh layar untuk mengubah pola visual<br>
+            • Sesuaikan kontrol untuk mengubah intensitas warna, kecepatan, dan kompleksitas<br>
+            • Klik pad musik untuk menambahkan nada ke komposisi kolektif<br>
+            • Amati bagaimana aksi Anda memengaruhi keseluruhan karya seni</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Resonansi - Instalasi Seni Imersif Berbasis Data Real-Time</p>
+        <p>Dikembangkan dengan teknologi Web Audio API, Canvas 2D, dan kreativitas kolaboratif</p>
+    </footer>
+
+    <script>
+        let audioContext = null;
+        
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        const notes = {
+            'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23,
+            'G4': 392.00, 'A4': 440.00, 'B4': 493.88, 'C5': 523.25
+        };
+
+        function playNote(frequency) {
+            initAudio();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        document.querySelectorAll('.pad').forEach(pad => {
+            pad.addEventListener('click', function() {
+                const note = this.dataset.note;
+                playNote(notes[note]);
+                this.classList.add('active');
+                setTimeout(() => this.classList.remove('active'), 200);
+                updateStat('interactionsCount', 1);
+                for (let i = 0; i < 10; i++) {
+                    particles.push(new Particle(Math.random() * canvasWidth, Math.random() * canvasHeight));
+                }
+            });
+        });
+
+        const bgCanvas = document.getElementById('bgCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        const mainCanvas = document.getElementById('mainCanvas');
+        const mainCtx = mainCanvas.getContext('2d');
+        let canvasWidth, canvasHeight;
+
+        function resizeCanvas() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+            mainCanvas.width = mainCanvas.offsetWidth;
+            mainCanvas.height = mainCanvas.offsetHeight || 600;
+            canvasWidth = mainCanvas.width;
+            canvasHeight = mainCanvas.height;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.size = Math.random() * 3 + 1;
+                this.life = 1;
+                this.decay = Math.random() * 0.01 + 0.005;
+                this.hue = Math.random() * 360;
+            }
+
+            update() {
+                this.x += this.vx * (motionSpeed / 50);
+                this.y += this.vy * (motionSpeed / 50);
+                this.life -= this.decay;
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+            }
+
+            draw(ctx, colorIntensity, lightIntensity) {
+                ctx.save();
+                ctx.globalAlpha = this.life * (lightIntensity / 100);
+                ctx.fillStyle = `hsl(${this.hue + colorIntensity * 3.6}, ${70 + colorIntensity * 0.3}%, ${50 + lightIntensity * 0.5}%)`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        let particles = [];
+        let mouseX = 0, mouseY = 0;
+        let colorIntensity = 50, motionSpeed = 50, complexity = 100, lightIntensity = 70;
+        let time = 0, energyLevel = 0, interactionCount = 0;
+        let fps = 0, lastFrameTime = Date.now(), frameCount = 0;
+
+        const controls = {
+            color: document.getElementById('colorControl'),
+            motion: document.getElementById('motionControl'),
+            complexity: document.getElementById('complexityControl'),
+            light: document.getElementById('lightControl')
+        };
+
+        controls.color.addEventListener('input', (e) => {
+            colorIntensity = parseInt(e.target.value);
+            document.getElementById('colorValue').textContent = colorIntensity + '%';
+        });
+
+        controls.motion.addEventListener('input', (e) => {
+            motionSpeed = parseInt(e.target.value);
+            document.getElementById('motionValue').textContent = motionSpeed + '%';
+        });
+
+        controls.complexity.addEventListener('input', (e) => {
+            complexity = parseInt(e.target.value);
+            document.getElementById('complexityValue').textContent = complexity;
+        });
+
+        controls.light.addEventListener('input', (e) => {
+            lightIntensity = parseInt(e.target.value);
+            document.getElementById('lightValue').textContent = lightIntensity + '%';
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            controls.color.value = 50;
+            controls.motion.value = 50;
+            controls.complexity.value = 100;
+            controls.light.value = 70;
+            colorIntensity = 50;
+            motionSpeed = 50;
+            complexity = 100;
+            lightIntensity = 70;
+            document.getElementById('colorValue').textContent = '50%';
+            document.getElementById('motionValue').textContent = '50%';
+            document.getElementById('complexityValue').textContent = '100';
+            document.getElementById('lightValue').textContent = '70%';
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            particles = [];
+        });
+
+        mainCanvas.addEventListener('mousemove', (e) => {
+            const rect = mainCanvas.getBoundingClientRect();
+            mouseX = (e.clientX - rect.left) / rect.width * canvasWidth;
+            mouseY = (e.clientY - rect.top) / rect.height * canvasHeight;
+            if (Math.random() < 0.3) {
+                particles.push(new Particle(mouseX, mouseY));
+            }
+            energyLevel = Math.min(100, energyLevel + 0.5);
+            updateStat('interactionsCount', 0.1);
+        });
+
+        mainCanvas.addEventListener('click', (e) => {
+            const rect = mainCanvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width * canvasWidth;
+            const y = (e.clientY - rect.top) / rect.height * canvasHeight;
+            for (let i = 0; i < 20; i++) {
+                particles.push(new Particle(x, y));
+            }
+            updateStat('interactionsCount', 1);
+        });
+
+        mainCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = mainCanvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            mouseX = (touch.clientX - rect.left) / rect.width * canvasWidth;
+            mouseY = (touch.clientY - rect.top) / rect.height * canvasHeight;
+            if (Math.random() < 0.3) {
+                particles.push(new Particle(mouseX, mouseY));
+            }
+            energyLevel = Math.min(100, energyLevel + 0.5);
+        });
+
+        function updateStat(statId, increment) {
+            if (statId === 'interactionsCount') {
+                interactionCount += increment;
+                document.getElementById(statId).textContent = Math.floor(interactionCount);
+            }
+        }
+
+        function animateBackground() {
+            bgCtx.fillStyle = 'rgba(5, 8, 16, 0.1)';
+            bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+            const gridSize = 50;
+            const cols = Math.ceil(bgCanvas.width / gridSize);
+            const rows = Math.ceil(bgCanvas.height / gridSize);
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    const x = i * gridSize;
+                    const y = j * gridSize;
+                    const wave = Math.sin(time * 0.001 * (motionSpeed / 50) + i * 0.1 + j * 0.1) * 50;
+                    bgCtx.strokeStyle = `hsla(${colorIntensity * 3.6}, 70%, 50%, ${0.1 + Math.abs(wave) / 500})`;
+                    bgCtx.lineWidth = 1;
+                    bgCtx.beginPath();
+                    bgCtx.moveTo(x, y);
+                    bgCtx.lineTo(x + gridSize, y + wave);
+                    bgCtx.stroke();
+                }
+            }
+        }
+
+        function animateMain() {
+            mainCtx.fillStyle = `rgba(10, 14, 26, ${0.1 + (100 - motionSpeed) / 1000})`;
+            mainCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+            const shapeCount = Math.floor(complexity / 20);
+            for (let i = 0; i < shapeCount; i++) {
+                const x = canvasWidth / 2 + Math.cos(time * 0.001 * (motionSpeed / 50) + i * 0.5) * (200 + i * 20);
+                const y = canvasHeight / 2 + Math.sin(time * 0.001 * (motionSpeed / 50) + i * 0.5) * (200 + i * 20);
+                const size = 20 + i * 5;
+                mainCtx.save();
+                mainCtx.translate(x, y);
+                mainCtx.rotate(time * 0.001 * (motionSpeed / 50));
+                mainCtx.strokeStyle = `hsla(${(colorIntensity * 3.6 + i * 30) % 360}, 80%, ${50 + lightIntensity * 0.5}%, 0.6)`;
+                mainCtx.lineWidth = 2;
+                mainCtx.strokeRect(-size / 2, -size / 2, size, size);
+                mainCtx.restore();
+            }
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.update();
+                p.draw(mainCtx, colorIntensity, lightIntensity);
+            });
+            if (Math.random() < complexity / 2000) {
+                particles.push(new Particle(Math.random() * canvasWidth, Math.random() * canvasHeight));
+            }
+            energyLevel = Math.max(0, energyLevel - 0.1);
+            document.getElementById('energyLevel').textContent = Math.round(energyLevel) + '%';
+            document.getElementById('particleCount').textContent = particles.length;
+        }
+
+        function updateFPS() {
+            frameCount++;
+            const now = Date.now();
+            if (now - lastFrameTime >= 1000) {
+                fps = frameCount;
+                document.getElementById('fpsDisplay').textContent = fps;
+                frameCount = 0;
+                lastFrameTime = now;
+            }
+        }
+
+        function animate() {
+            time++;
+            animateBackground();
+            animateMain();
+            updateFPS();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+                animate();
+                setInterval(() => {
+                    const count = 1 + Math.floor(Math.random() * 3);
+                    document.getElementById('participantsCount').textContent = count;
+                }, 5000);
+            }, 1500);
+        });
+    </script>
+</body>
+</html>
