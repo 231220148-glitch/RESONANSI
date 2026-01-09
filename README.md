@@ -77,7 +77,7 @@ Setiap sesi menghasilkan karya seni yang berbeda, menjadikan pengalaman setiap p
 *Visualisasi partikel dinamis saat user berinteraksi dengan mouse movement*
 
 ### Music Pads
-![Music Pads](Music_Pads.png)
+![Music Pads](MusicPad.png)
 *8 music pads interaktif dengan frequency display untuk setiap nada*
 
 ### Statistics Dashboard
